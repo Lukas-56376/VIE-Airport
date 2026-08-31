@@ -1,7 +1,6 @@
-/* VIE Tower — live preview (arrivals / departures / METAR / TAF) */
-
 const TZ = "Europe/Vienna";
 const REFRESH_MS = 60_000;
+const API = "https://vie-tower-proxy.lukas-burtan2020.workers.dev";
 
 const RUNWAYS = [
   { id: "11", heading: 116 },
@@ -148,9 +147,7 @@ function renderFlights() {
     tbody.innerHTML = rows.map((f) => rowHtml(f, isArr)).join("");
   }
 
-  const send = state.sendDate
-    ? ` · as of ${hhmm(state.sendDate)}`
-    : "";
+  const send = state.sendDate ? ` · as of ${hhmm(state.sendDate)}` : "";
   meta.textContent = `${rows.length} of ${all.length} movements · official VIE monitor${send} · auto-refresh 60 s`;
 }
 
@@ -223,11 +220,11 @@ function renderWeather() {
 }
 
 async function loadFlights(direction) {
-  const url =
+  const path =
     direction === "departures"
       ? "/api/flights/departures"
       : "/api/flights/arrivals";
-  const res = await fetch(url);
+  const res = await fetch(API + path);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const rows = json.monitor?.departure ?? [];
@@ -240,7 +237,7 @@ async function loadFlights(direction) {
 }
 
 async function loadWeather() {
-  const res = await fetch("/api/weather");
+  const res = await fetch(API + "/api/weather");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
