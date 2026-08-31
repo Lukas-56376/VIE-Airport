@@ -35,9 +35,6 @@ Dark ops-console style UI. All times in **Europe/Vienna** (Austrian local time).
 - **Runways** — 11/29 and 16/34 (length, width, surface)
 - **Wind components** — headwind/tailwind and crosswind per runway, calculated from the live METAR
 
-### Footer
-- Data source notice and disclaimer (not for operational flight planning)
-
 ---
 
 ## Status colours
