@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIE Tower — Vienna Airport Arrivals &amp; Departures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="badge">VIE</span>
+        <h1>Vienna International Airport</h1>
+        <span class="coords">LOWW · 48.110N 016.570E · 183 m</span>
+      </div>
+      <div class="clocks">
+        <div class="clock">
+          <div class="time" id="local-time">--:--:--</div>
+          <div class="label" id="local-date">— · local (Vienna)</div>
+        </div>
+        <div class="clock utc">
+          <div class="time" id="utc-time">--:--</div>
+          <div class="label">UTC</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="arrivals" role="tab">Arrivals</button>
+      <button class="tab" data-tab="departures" role="tab">Departures</button>
+      <button class="tab" data-tab="airport" role="tab">Airport</button>
+    </nav>
+
+    <div class="toolbar" id="flights-toolbar">
+      <input type="search" id="search" placeholder="Flight, airline, city…" autocomplete="off" />
+      <div class="meta" id="meta-line">Connecting…</div>
+    </div>
+
+    <main>
+      <section id="panel-arrivals" class="panel active">
+        <div id="notice-arrivals"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sched</th>
+                <th>Exp</th>
+                <th>Flight</th>
+                <th>Airline</th>
+                <th>From</th>
+                <th class="hide-md">Belt</th>
+                <th class="hide-lg">Aircraft</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-arrivals">
+              <tr><td colspan="8" class="empty">Loading live arrivals…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-departures" class="panel">
+        <div id="notice-departures"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sched</th>
+                <th>Exp</th>
+                <th>Flight</th>
+                <th>Airline</th>
+                <th>To</th>
+                <th class="hide-md">Gate</th>
+                <th class="hide-lg">Aircraft</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-departures">
+              <tr><td colspan="8" class="empty">Loading live departures…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-airport" class="panel">
+        <div class="airport-grid">
+          <div class="card">
+            <h2 class="section-title">Current METAR (LOWW)</h2>
+            <div class="card-body" id="metar-body">
+              <p class="empty">Loading METAR…</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">TAF</h2>
+            <div class="card-body" id="taf-body">
+              <p class="empty">Loading TAF…</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">ATIS</h2>
+            <div class="card-body">
+              <p class="note" style="margin:0 0 10px">
+                Official ATIS is broadcast on VHF only (no public text API from Austro Control).
+              </p>
+              <dl class="fields">
+                <div><dt>ATIS Arrival</dt><dd class="num">122.955 MHz</dd></div>
+                <div><dt>ATIS Departure</dt><dd class="num">121.730 MHz</dd></div>
+                <div><dt>Tower</dt><dd class="num">119.400 MHz</dd></div>
+                <div><dt>Ground</dt><dd class="num">121.600 MHz</dd></div>
+              </dl>
+              <p class="note" style="margin-top:8px">
+                Active runway and ATIS letter come from the radio ATIS / METAR trend.
+                METAR above is the official observation used operationally alongside ATIS.
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">Frequencies</h2>
+            <div class="card-body">
+              <dl class="fields">
+                <div><dt>Delivery</dt><dd class="num">122.125 MHz</dd></div>
+                <div><dt>Approach</dt><dd class="num">134.675 MHz</dd></div>
+                <div><dt>Director</dt><dd class="num">119.800 MHz</dd></div>
+                <div><dt>INFO</dt><dd class="num">118.520 MHz</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <div class="card full">
+            <h2 class="section-title">Runways</h2>
+            <div class="card-body no-pad">
+              <table class="rwy-table">
+                <thead>
+                  <tr>
+                    <th>Designator</th>
+                    <th>Heading</th>
+                    <th>Length</th>
+                    <th>Width</th>
+                    <th>Surface</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num">11 / 29</td>
+                    <td class="num muted">116° / 296°</td>
+                    <td class="num muted">3,500 m</td>
+                    <td class="num muted">45 m</td>
+                    <td class="muted">Asphalt</td>
+                  </tr>
+                  <tr>
+                    <td class="num">16 / 34</td>
+                    <td class="num muted">164° / 344°</td>
+                    <td class="num muted">3,600 m</td>
+                    <td class="num muted">45 m</td>
+                    <td class="muted">Asphalt</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="wind-components" id="wind-components">
+                <div class="wc-title">Wind components (from live METAR)</div>
+                <div class="wc-grid" id="wc-grid">
+                  <p class="empty" style="grid-column:1/-1">Waiting for METAR…</p>
+                </div>
+                <p class="note">
+                  Calculated from METAR wind. Active runway direction is decided by ATC and published via ATIS, not in open flight data.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Flight data: official Vienna Airport flight monitor.
+      Weather: NOAA Aviation Weather Center (METAR/TAF LOWW).
+      All times Europe/Vienna. Not for operational flight planning.
+      <br /><span class="preview-note">Live data via local proxy · refresh every 60 s</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
