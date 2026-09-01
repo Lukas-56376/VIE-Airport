@@ -1,8 +1,6 @@
-# VIE-Airport 
+# VIE-Airport — Vienna Arrivals & Departures
 
 Live arrivals, departures and operational information for **Vienna International Airport (VIE / LOWW)**.
-
-Dark ops-console style UI. All times in **Europe/Vienna** (Austrian local time).
 
 ---
 
@@ -23,8 +21,8 @@ Dark ops-console style UI. All times in **Europe/Vienna** (Austrian local time).
 - Time window: landed flights drop after ~20 min; departed after ~30 min; delayed flights stay visible
 
 ### Airport
-- **METAR** — current observation
-- **TAF** — forecast
+- **METAR** = current weather
+- **TAF** = forecast ofr weather
 - **Runways** and wind components from live METAR
 
 ### ATC
