@@ -1,4 +1,4 @@
-# VIE Tower — Vienna Airport Arrivals & Departures
+# VIE-Airport — Vienna Arrivals & Departures
 
 Live arrivals, departures and operational information for **Vienna International Airport (VIE / LOWW)**.
 
@@ -12,28 +12,23 @@ Dark ops-console style UI. All times in **Europe/Vienna** (Austrian local time).
 - Airport identity: **VIE**, LOWW, coordinates, elevation
 - Live clock: local Vienna time + UTC
 
-### Arrivals
+### Arrivals / Departures
 - Scheduled and expected times
-- Flight number (with codeshare count when applicable)
-- Airline and origin (city + IATA)
-- Baggage belt
-- Aircraft type
-- Status (landed, delayed, cancelled, …) with colour coding
+- Flight number links to **Flightradar24** for that flight
+- Airline and origin/destination (city + IATA)
+- Belt (arrivals) or gate (departures)
+- Aircraft type and status with colour coding
 - Search by flight, airline or city
 - Auto-refresh every 60 seconds
-
-### Departures
-- Same layout as arrivals
-- Gate instead of belt
-- Destination instead of origin
+- Time window: landed flights drop after ~20 min; departed after ~30 min; delayed flights stay visible
 
 ### Airport
-- **METAR** — current observation (wind, visibility, temp/dew, QNH, flight category, raw text)
+- **METAR** — current observation
 - **TAF** — forecast
-- **ATIS** — VHF frequencies only (Arrival 122.955 · Departure 121.730); no public text ATIS API
-- **Frequencies** — Tower, Ground, Delivery, Approach, Director
-- **Runways** — 11/29 and 16/34 (length, width, surface)
-- **Wind components** — headwind/tailwind and crosswind per runway, calculated from the live METAR
+- **Runways** and wind components from live METAR
+
+### ATC
+- ATIS, Delivery, Ground, Tower, Director, Approach, INFO and emergency frequencies for LOWW
 
 ---
 
@@ -54,7 +49,6 @@ Dark ops-console style UI. All times in **Europe/Vienna** (Austrian local time).
 |------|--------|
 | Flights | Official Vienna Airport flight monitor |
 | METAR / TAF | NOAA Aviation Weather Center (LOWW) |
-| Runways | Published aerodrome data |
+| Flight links | Flightradar24 |
+| Frequencies | Published aerodrome / AIP data |
 | ATIS | VHF only (Austro Control) |
-
-Active runway in use is decided by ATC and published via radio ATIS — it is not available in the public flight feed.

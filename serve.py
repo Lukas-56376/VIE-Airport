@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-VIE Tower — local preview server with live data proxy.
-Run:  python3 serve.py
-Open: http://127.0.0.1:8765
-"""
-
 from __future__ import annotations
 
 import json

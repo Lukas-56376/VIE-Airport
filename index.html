@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VIE Tower — Vienna Airport Arrivals &amp; Departures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e1f24" />
+  <title>VIE-Airport — Vienna Arrivals &amp; Departures</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -35,10 +36,11 @@
       <button class="tab active" data-tab="arrivals" role="tab">Arrivals</button>
       <button class="tab" data-tab="departures" role="tab">Departures</button>
       <button class="tab" data-tab="airport" role="tab">Airport</button>
+      <button class="tab" data-tab="atc" role="tab">ATC</button>
     </nav>
 
     <div class="toolbar" id="flights-toolbar">
-      <input type="search" id="search" placeholder="Flight, airline, city…" autocomplete="off" />
+      <input type="search" id="search" placeholder="Flight, airline, city…" autocomplete="off" enterkeyhint="search" />
       <div class="meta" id="meta-line">Connecting…</div>
     </div>
 
@@ -54,7 +56,7 @@
                 <th>Flight</th>
                 <th>Airline</th>
                 <th>From</th>
-                <th class="hide-md">Belt</th>
+                <th class="hide-md">Luggage Belt</th>
                 <th class="hide-lg">Aircraft</th>
                 <th>Status</th>
               </tr>
@@ -105,37 +107,6 @@
             </div>
           </div>
 
-          <div class="card">
-            <h2 class="section-title">ATIS</h2>
-            <div class="card-body">
-              <p class="note" style="margin:0 0 10px">
-                Official ATIS is broadcast on VHF only (no public text API from Austro Control).
-              </p>
-              <dl class="fields">
-                <div><dt>ATIS Arrival</dt><dd class="num">122.955 MHz</dd></div>
-                <div><dt>ATIS Departure</dt><dd class="num">121.730 MHz</dd></div>
-                <div><dt>Tower</dt><dd class="num">119.400 MHz</dd></div>
-                <div><dt>Ground</dt><dd class="num">121.600 MHz</dd></div>
-              </dl>
-              <p class="note" style="margin-top:8px">
-                Active runway and ATIS letter come from the radio ATIS / METAR trend.
-                METAR above is the official observation used operationally alongside ATIS.
-              </p>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2 class="section-title">Frequencies</h2>
-            <div class="card-body">
-              <dl class="fields">
-                <div><dt>Delivery</dt><dd class="num">122.125 MHz</dd></div>
-                <div><dt>Approach</dt><dd class="num">134.675 MHz</dd></div>
-                <div><dt>Director</dt><dd class="num">119.800 MHz</dd></div>
-                <div><dt>INFO</dt><dd class="num">118.520 MHz</dd></div>
-              </dl>
-            </div>
-          </div>
-
           <div class="card full">
             <h2 class="section-title">Runways</h2>
             <div class="card-body no-pad">
@@ -172,9 +143,121 @@
                   <p class="empty" style="grid-column:1/-1">Waiting for METAR…</p>
                 </div>
                 <p class="note">
-                  Calculated from METAR wind. Active runway direction is decided by ATC and published via ATIS, not in open flight data.
+                  Calculated from METAR wind. Active runway is decided by ATC and published via ATIS.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-atc" class="panel">
+        <div class="airport-grid">
+          <div class="card full">
+            <h2 class="section-title">ATC Frequencies — LOWW</h2>
+            <div class="card-body no-pad">
+              <table class="rwy-table freq-table">
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Callsign</th>
+                    <th>Frequency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>ATIS Arrival</td>
+                    <td class="muted">—</td>
+                    <td class="num">122.955 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>ATIS Departure</td>
+                    <td class="muted">—</td>
+                    <td class="num">121.730 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Clearance Delivery</td>
+                    <td class="muted">Wien Delivery</td>
+                    <td class="num">122.125 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Ground</td>
+                    <td class="muted">Wien Ground</td>
+                    <td class="num">121.600 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Ground (West)</td>
+                    <td class="muted">Wien Ground</td>
+                    <td class="num">121.775 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Tower (11/29)</td>
+                    <td class="muted">Wien Tower</td>
+                    <td class="num">119.400 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Tower (16/34)</td>
+                    <td class="muted">Wien Tower</td>
+                    <td class="num">123.800 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Director</td>
+                    <td class="muted">Director</td>
+                    <td class="num">119.800 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Approach</td>
+                    <td class="muted">Wien Radar</td>
+                    <td class="num">134.675 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Approach (N)</td>
+                    <td class="muted">Wien Radar</td>
+                    <td class="num">118.775 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Approach (M)</td>
+                    <td class="muted">Wien Radar</td>
+                    <td class="num">125.175 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>INFO</td>
+                    <td class="muted">Wien Information</td>
+                    <td class="num">118.520 MHz</td>
+                  </tr>
+                  <tr>
+                    <td>Emergency</td>
+                    <td class="muted">—</td>
+                    <td class="num">121.500 MHz</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">ATIS</h2>
+            <div class="card-body">
+              <p class="note" style="margin:0 0 10px">
+                Official ATIS is VHF-only. There is no public text ATIS API from Austro Control.
+              </p>
+              <dl class="fields">
+                <div><dt>Arrival ATIS</dt><dd class="num">122.955 MHz</dd></div>
+                <div><dt>Departure ATIS</dt><dd class="num">121.730 MHz</dd></div>
+              </dl>
+              <p class="note" style="margin-top:10px">
+                Active runway and ATIS letter are published on the radio ATIS. METAR on the Airport tab is the official observation.
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="section-title">Notes</h2>
+            <div class="card-body">
+              <p class="note" style="margin:0">
+                Frequencies may change with AIP updates. Always verify with current charts / ATIS before use.
+                Not for operational flight planning.
+              </p>
             </div>
           </div>
         </div>
@@ -184,8 +267,9 @@
     <footer class="footer">
       Flight data: official Vienna Airport flight monitor.
       Weather: NOAA Aviation Weather Center (METAR/TAF LOWW).
+      Flight links: Flightradar24.
       All times Europe/Vienna. Not for operational flight planning.
-      <br /><span class="preview-note">Live data via local proxy · refresh every 60 s</span>
+      <br /><span class="preview-note" id="refresh-status">Live data · auto-refresh every 60 s</span>
     </footer>
   </div>
 

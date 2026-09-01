@@ -2,6 +2,11 @@ const TZ = "Europe/Vienna";
 const REFRESH_MS = 60_000;
 const API = "https://vie-tower-proxy.lukas-burtan2020.workers.dev";
 
+
+const PAST_LANDED_MIN = 20;
+const PAST_DEPARTED_MIN = 30;
+const FUTURE_WINDOW_H = 12;
+
 const RUNWAYS = [
   { id: "11", heading: 116 },
   { id: "29", heading: 296 },
@@ -9,7 +14,6 @@ const RUNWAYS = [
   { id: "34", heading: 344 },
 ];
 
-/** @type {{ arrivals: any[], departures: any[], sendDate: string|null, weather: any }} */
 const state = {
   arrivals: [],
   departures: [],
@@ -18,6 +22,8 @@ const state = {
   errorArr: null,
   errorDep: null,
   loading: true,
+  lastRefresh: null,
+  refreshing: false,
 };
 
 function hhmm(iso) {
@@ -47,13 +53,33 @@ function statusTone(code, delay) {
   return "neutral";
 }
 
+function isCompleted(code) {
+  const c = String(code || "").toUpperCase();
+  return ["BLI", "LND", "ARR", "DEP", "BLO"].includes(c);
+}
+
+function isCancelled(code) {
+  const c = String(code || "").toUpperCase();
+  return ["CNL", "CANCELLED"].includes(c);
+}
+
+
+function fr24Url(fn) {
+  const slug = String(fn || "")
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .toLowerCase();
+  if (!slug) return null;
+  return `https://www.flightradar24.com/data/flights/${slug}`;
+}
+
 function mapFlight(raw, dir) {
   const place = (dir === "arrivals" ? raw.origins : raw.destinations)?.[0] ?? {};
   return {
     fn: String(raw.fn ?? "").trim(),
     airline: raw.airline?.name ?? "",
     airlineCode: raw.airline?.iataCode ?? "",
-    place: place.nameDE ?? place.nameEN ?? place.name ?? "",
+    place: place.nameEN ?? place.nameDE ?? place.name ?? "",
     placeIata: place.iataCode ?? "",
     scheduled: raw.scheduledatetime ?? null,
     expected: raw.actualdatetime ?? null,
@@ -66,12 +92,36 @@ function mapFlight(raw, dir) {
   };
 }
 
-function filterSort(flights, q) {
-  const cutoff = Date.now() - 60 * 60 * 1000;
-  let rows = flights.filter((f) => {
-    const t = new Date(f.expected ?? f.scheduled ?? "").getTime();
-    return Number.isNaN(t) ? true : t >= cutoff;
-  });
+function inTimeWindow(f, direction) {
+  const now = Date.now();
+  const pastLimit =
+    direction === "arrivals"
+      ? PAST_LANDED_MIN * 60_000
+      : PAST_DEPARTED_MIN * 60_000;
+  const futureLimit = FUTURE_WINDOW_H * 60 * 60_000;
+
+  const sched = f.scheduled ? new Date(f.scheduled).getTime() : NaN;
+  const exp = f.expected ? new Date(f.expected).getTime() : NaN;
+  const ref = !Number.isNaN(exp) ? exp : sched;
+
+  if (isCancelled(f.statusCode)) {
+    if (Number.isNaN(sched)) return true;
+    return sched >= now - 30 * 60_000;
+  }
+
+  if (isCompleted(f.statusCode)) {
+    if (Number.isNaN(ref)) return false;
+    return ref >= now - pastLimit;
+  }
+
+  if (Number.isNaN(ref)) return true;
+  if (ref > now + futureLimit) return false;
+  if (ref < now - 6 * 60 * 60_000) return false;
+  return true;
+}
+
+function filterSort(flights, q, direction) {
+  let rows = flights.filter((f) => inTimeWindow(f, direction));
   const needle = (q || "").trim().toLowerCase();
   if (needle) {
     rows = rows.filter((f) =>
@@ -102,13 +152,17 @@ function rowHtml(f, isArr) {
       ? `<span class="codeshare" title="${f.codeshares.join(", ")}">+${f.codeshares.length}</span>`
       : "";
   const gateOrBelt = isArr ? f.belt : f.gate;
+  const fr = fr24Url(f.fn);
+  const flightCell = fr
+    ? `<a class="flight-link" href="${fr}" target="_blank" rel="noopener noreferrer" title="Open on Flightradar24">${f.fn}</a>${cs}`
+    : `${f.fn}${cs}`;
 
   return `<tr>
     <td class="num">${hhmm(f.scheduled)}</td>
     <td class="num">${hhmm(f.expected)}${delayHtml}</td>
-    <td class="num" style="font-weight:500">${f.fn}${cs}</td>
-    <td class="muted">${f.airline}</td>
-    <td>${f.place}<span class="num muted" style="margin-left:6px;font-size:11px">${f.placeIata}</span></td>
+    <td class="num flight-cell">${flightCell}</td>
+    <td class="muted airline-cell">${f.airline}</td>
+    <td class="place-cell">${f.place}<span class="num muted iata">${f.placeIata}</span></td>
     <td class="num muted hide-md">${gateOrBelt ?? "—"}</td>
     <td class="num muted hide-lg">${f.aircraft || "—"}</td>
     <td><span class="status ${tone}">${f.statusText || f.statusCode || "—"}</span></td>
@@ -118,7 +172,7 @@ function rowHtml(f, isArr) {
 function renderFlights() {
   const q = document.getElementById("search").value;
   const tab = document.querySelector(".tab.active")?.dataset.tab || "arrivals";
-  if (tab === "airport") return;
+  if (tab === "airport" || tab === "atc") return;
 
   const isArr = tab === "arrivals";
   const all = isArr ? state.arrivals : state.departures;
@@ -135,20 +189,21 @@ function renderFlights() {
   }
   notice.innerHTML = "";
 
-  const rows = filterSort(all, q);
+  const rows = filterSort(all, q, isArr ? "arrivals" : "departures");
   if (state.loading && all.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="empty">Loading live ${tab}…</td></tr>`;
     meta.textContent = "Loading…";
     return;
   }
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">No movements match the filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">No movements in the current time window.</td></tr>`;
   } else {
     tbody.innerHTML = rows.map((f) => rowHtml(f, isArr)).join("");
   }
 
   const send = state.sendDate ? ` · as of ${hhmm(state.sendDate)}` : "";
-  meta.textContent = `${rows.length} of ${all.length} movements · official VIE monitor${send} · auto-refresh 60 s`;
+  const upd = state.refreshing ? " · updating…" : "";
+  meta.textContent = `${rows.length} shown · official VIE monitor${send}${upd}`;
 }
 
 function windComponent(rwyHeading, wdir, wspd) {
@@ -164,11 +219,12 @@ function renderWeather() {
   const metarEl = document.getElementById("metar-body");
   const tafEl = document.getElementById("taf-body");
   const wcGrid = document.getElementById("wc-grid");
+  if (!metarEl) return;
 
   if (!wx || !wx.ok || !wx.metar) {
     metarEl.innerHTML = `<p class="empty">${wx?.error || "METAR unavailable"}</p>`;
-    tafEl.innerHTML = `<pre class="taf">${wx?.taf || "—"}</pre>`;
-    wcGrid.innerHTML = `<p class="empty" style="grid-column:1/-1">No wind data</p>`;
+    if (tafEl) tafEl.innerHTML = `<pre class="taf">${wx?.taf || "—"}</pre>`;
+    if (wcGrid) wcGrid.innerHTML = `<p class="empty" style="grid-column:1/-1">No wind data</p>`;
     return;
   }
 
@@ -202,20 +258,42 @@ function renderWeather() {
     <pre class="metar">${m.rawOb || "—"}</pre>
   `;
 
-  tafEl.innerHTML = `<pre class="taf">${wx.taf || "No TAF available"}</pre>`;
+  if (tafEl) tafEl.innerHTML = `<pre class="taf">${wx.taf || "No TAF available"}</pre>`;
 
-  if (typeof m.wdir === "number" && typeof m.wspd === "number") {
-    wcGrid.innerHTML = RUNWAYS.map((r) => {
-      const { head, cross } = windComponent(r.heading, m.wdir, m.wspd);
-      const headLabel = head >= 0 ? `Headwind ${head}` : `Tailwind ${-head}`;
-      return `<div class="wc">
-        <div class="num strong">RWY ${r.id}</div>
-        <div class="num muted">${headLabel} kt</div>
-        <div class="num muted">Crosswind ${cross} kt</div>
-      </div>`;
-    }).join("");
+  if (wcGrid) {
+    if (typeof m.wdir === "number" && typeof m.wspd === "number") {
+      wcGrid.innerHTML = RUNWAYS.map((r) => {
+        const { head, cross } = windComponent(r.heading, m.wdir, m.wspd);
+        const headLabel = head >= 0 ? `Headwind ${head}` : `Tailwind ${-head}`;
+        return `<div class="wc">
+          <div class="num strong">RWY ${r.id}</div>
+          <div class="num muted">${headLabel} kt</div>
+          <div class="num muted">Crosswind ${cross} kt</div>
+        </div>`;
+      }).join("");
+    } else {
+      wcGrid.innerHTML = `<p class="empty" style="grid-column:1/-1">Variable / calm — no components</p>`;
+    }
+  }
+}
+
+function updateRefreshStatus() {
+  const el = document.getElementById("refresh-status");
+  if (!el) return;
+  if (state.refreshing) {
+    el.textContent = "Refreshing…";
+    return;
+  }
+  if (state.lastRefresh) {
+    const t = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: TZ,
+    }).format(state.lastRefresh);
+    el.textContent = `Live data · last update ${t} · auto-refresh 60 s`;
   } else {
-    wcGrid.innerHTML = `<p class="empty" style="grid-column:1/-1">Variable / calm — no components</p>`;
+    el.textContent = "Live data · auto-refresh every 60 s";
   }
 }
 
@@ -224,7 +302,7 @@ async function loadFlights(direction) {
     direction === "departures"
       ? "/api/flights/departures"
       : "/api/flights/arrivals";
-  const res = await fetch(API + path);
+  const res = await fetch(API + path, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const rows = json.monitor?.departure ?? [];
@@ -237,13 +315,18 @@ async function loadFlights(direction) {
 }
 
 async function loadWeather() {
-  const res = await fetch(API + "/api/weather");
+  const res = await fetch(API + "/api/weather", { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 async function refresh() {
-  state.loading = true;
+  if (state.refreshing) return;
+  state.refreshing = true;
+  state.loading = state.arrivals.length === 0 && state.departures.length === 0;
+  updateRefreshStatus();
+  renderFlights();
+
   try {
     const [arr, dep, wx] = await Promise.all([
       loadFlights("arrivals").catch((e) => ({ error: e.message })),
@@ -253,7 +336,7 @@ async function refresh() {
 
     if (arr.error) {
       state.errorArr = arr.error;
-      state.arrivals = [];
+      if (state.arrivals.length === 0) state.arrivals = [];
     } else {
       state.errorArr = null;
       state.arrivals = arr.flights;
@@ -262,7 +345,7 @@ async function refresh() {
 
     if (dep.error) {
       state.errorDep = dep.error;
-      state.departures = [];
+      if (state.departures.length === 0) state.departures = [];
     } else {
       state.errorDep = null;
       state.departures = dep.flights;
@@ -270,10 +353,13 @@ async function refresh() {
     }
 
     state.weather = wx;
+    state.lastRefresh = new Date();
   } finally {
     state.loading = false;
+    state.refreshing = false;
     renderFlights();
     renderWeather();
+    updateRefreshStatus();
   }
 }
 
@@ -305,7 +391,7 @@ function setTab(tab) {
     p.classList.toggle("active", p.id === "panel-" + tab);
   });
   const toolbar = document.getElementById("flights-toolbar");
-  toolbar.style.display = tab === "airport" ? "none" : "flex";
+  toolbar.style.display = tab === "arrivals" || tab === "departures" ? "flex" : "none";
   renderFlights();
 }
 
@@ -315,7 +401,15 @@ document.querySelectorAll(".tab").forEach((btn) => {
 
 document.getElementById("search").addEventListener("input", () => renderFlights());
 
+setInterval(() => {
+  if (!state.refreshing) renderFlights();
+}, 30_000);
+
 fmtClock();
 setInterval(fmtClock, 1000);
 refresh();
 setInterval(refresh, REFRESH_MS);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refresh();
+});
