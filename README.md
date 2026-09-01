@@ -1,4 +1,4 @@
-# VIE-Airport — Vienna Arrivals & Departures
+# VIE-Airport 
 
 Live arrivals, departures and operational information for **Vienna International Airport (VIE / LOWW)**.
 
