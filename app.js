@@ -217,11 +217,41 @@ function inTimeWindow(f, direction) {
   return true;
 }
 
-function filterSort(flights, q, direction) {
+function matchesStatusFilter(f, filter) {
+  if (!filter || filter === "all") return true;
+
+  const delay = minutesDiff(f.scheduled, f.expected);
+  const tone = statusTone(f.statusCode, delay);
+
+  if (filter === "cancelled") {
+    return isCancelled(f.statusCode) || tone === "bad";
+  }
+
+  if (filter === "completed") {
+    return isCompleted(f.statusCode);
+  }
+
+  if (filter === "delayed") {
+    return tone === "warn" && !isCancelled(f.statusCode);
+  }
+
+  if (filter === "on-time") {
+    return (
+      !isCancelled(f.statusCode) &&
+      !isCompleted(f.statusCode) &&
+      tone !== "warn"
+    );
+  }
+
+  return true;
+}
+
+function filterSort(flights, q, direction, statusFilter, sortBy) {
   let rows = flights.filter((f) =>
     inTimeWindow(f, direction)
   );
 
+  // Search only flight number, airline and city (not status)
   const needle = (q || "").trim().toLowerCase();
 
   if (needle) {
@@ -231,7 +261,6 @@ function filterSort(flights, q, direction) {
         f.airline,
         f.place,
         f.placeIata,
-        f.statusText,
         ...f.codeshares,
       ]
         .join(" ")
@@ -240,18 +269,49 @@ function filterSort(flights, q, direction) {
     );
   }
 
-  return rows
-    .slice()
-    .sort((a, b) => {
-      const aTime =
-        parseDate(a.scheduled)?.getTime() ?? 0;
+  // Status filter
+  if (statusFilter && statusFilter !== "all") {
+    rows = rows.filter((f) =>
+      matchesStatusFilter(f, statusFilter)
+    );
+  }
 
-      const bTime =
-        parseDate(b.scheduled)?.getTime() ?? 0;
+  // Sort
+  const sortKey = sortBy || "time";
 
-      return aTime - bTime;
-    })
-    .slice(0, 150);
+  rows = rows.slice().sort((a, b) => {
+    if (sortKey === "city") {
+      const cityA = (a.place || a.placeIata || "").toLowerCase();
+      const cityB = (b.place || b.placeIata || "").toLowerCase();
+      if (cityA < cityB) return -1;
+      if (cityA > cityB) return 1;
+      // secondary: time
+      const tA = parseDate(a.scheduled)?.getTime() ?? 0;
+      const tB = parseDate(b.scheduled)?.getTime() ?? 0;
+      return tA - tB;
+    }
+
+    if (sortKey === "status") {
+      const delayA = minutesDiff(a.scheduled, a.expected);
+      const delayB = minutesDiff(b.scheduled, b.expected);
+      const toneA = statusTone(a.statusCode, delayA);
+      const toneB = statusTone(b.statusCode, delayB);
+      const order = { bad: 0, warn: 1, neutral: 2, ok: 3 };
+      const rankA = order[toneA] ?? 2;
+      const rankB = order[toneB] ?? 2;
+      if (rankA !== rankB) return rankA - rankB;
+      const tA = parseDate(a.scheduled)?.getTime() ?? 0;
+      const tB = parseDate(b.scheduled)?.getTime() ?? 0;
+      return tA - tB;
+    }
+
+    // default: time
+    const aTime = parseDate(a.scheduled)?.getTime() ?? 0;
+    const bTime = parseDate(b.scheduled)?.getTime() ?? 0;
+    return aTime - bTime;
+  });
+
+  return rows.slice(0, 150);
 }
 
 function rowHtml(f, isArr) {
@@ -317,6 +377,12 @@ function renderFlights() {
     document.getElementById("search");
 
   const q = search?.value ?? "";
+
+  const statusFilter =
+    document.getElementById("filter-status")?.value || "all";
+
+  const sortBy =
+    document.getElementById("sort-by")?.value || "time";
 
   const tab =
     document.querySelector(
@@ -388,7 +454,9 @@ function renderFlights() {
     q,
     isArr
       ? "arrivals"
-      : "departures"
+      : "departures",
+    statusFilter,
+    sortBy
   );
 
   if (
@@ -1014,6 +1082,26 @@ const search =
 if (search) {
   search.addEventListener(
     "input",
+    renderFlights
+  );
+}
+
+const filterStatus =
+  document.getElementById("filter-status");
+
+if (filterStatus) {
+  filterStatus.addEventListener(
+    "change",
+    renderFlights
+  );
+}
+
+const sortBy =
+  document.getElementById("sort-by");
+
+if (sortBy) {
+  sortBy.addEventListener(
+    "change",
     renderFlights
   );
 }

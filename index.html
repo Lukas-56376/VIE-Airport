@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#1e1f24" />
+  <meta name="theme-color" content="#0b0d12" />
   <title>VIE-Airport — Vienna Arrivals &amp; Departures</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,7 +40,21 @@
     </nav>
 
     <div class="toolbar" id="flights-toolbar">
-      <input type="search" id="search" placeholder="Flight, airline, city…" autocomplete="off" enterkeyhint="search" />
+      <input type="search" id="search" placeholder="Flight number, airline or city…" autocomplete="off" enterkeyhint="search" />
+      <div class="toolbar-controls">
+        <select id="filter-status" aria-label="Filter by status">
+          <option value="all">All status</option>
+          <option value="on-time">On time / Expected</option>
+          <option value="delayed">Delayed</option>
+          <option value="completed">Landed / Departed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select id="sort-by" aria-label="Sort by">
+          <option value="time">Sort: Time</option>
+          <option value="status">Sort: Status</option>
+          <option value="city">Sort: City</option>
+        </select>
+      </div>
       <div class="meta" id="meta-line">Connecting…</div>
     </div>
 
