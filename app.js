@@ -36,31 +36,13 @@ function parseDate(value) {
 
   if (!str) return null;
 
-  let date = new Date(str);
+  const date = new Date(str);
 
   if (!Number.isNaN(date.getTime())) {
     return date;
   }
 
-  const match = str.match(
-    /^(\d{4})[-/.](\d{2})[-/.](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/
-  );
-
-  if (!match) return null;
-
-  const [, year, month, day, hour = "00", minute = "00", second = "00"] =
-    match;
-
-  date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second)
-  );
-
-  return Number.isNaN(date.getTime()) ? null : date;
+  return null;
 }
 
 function hhmm(value) {
@@ -85,15 +67,27 @@ function minutesDiff(sched, exp) {
 
   if (!a || !b) return null;
 
-  return Math.round((b.getTime() - a.getTime()) / 60000);
+  return Math.round(
+    (b.getTime() - a.getTime()) / 60000
+  );
 }
 
 function statusTone(code, delay) {
   const c = String(code || "").toUpperCase();
 
-  if (["CNL", "CANCELLED", "DIV"].includes(c)) return "bad";
-  if (["BLI", "LND", "ARR", "DEP", "AIR", "BLO"].includes(c)) return "ok";
-  if (delay !== null && delay >= 15) return "warn";
+  if (["CNL", "CANCELLED", "DIV"].includes(c)) {
+    return "bad";
+  }
+
+  if (
+    ["BLI", "LND", "ARR", "DEP", "AIR", "BLO"].includes(c)
+  ) {
+    return "ok";
+  }
+
+  if (delay !== null && delay >= 15) {
+    return "warn";
+  }
 
   return "neutral";
 }
@@ -132,7 +126,9 @@ function escapeHtml(value) {
 
 function mapFlight(raw, dir) {
   const place =
-    (dir === "arrivals" ? raw.origins : raw.destinations)?.[0] ?? {};
+    (dir === "arrivals"
+      ? raw.origins
+      : raw.destinations)?.[0] ?? {};
 
   return {
     fn: String(raw.fn ?? "").trim(),
@@ -148,27 +144,11 @@ function mapFlight(raw, dir) {
 
     placeIata: place.iataCode ?? "",
 
-    scheduled:
-      raw.scheduledatetime ??
-      raw.scheduledDateTime ??
-      raw.scheduled ??
-      null,
+    scheduled: raw.scheduledatetime ?? null,
+    expected: raw.actualdatetime ?? null,
 
-    expected:
-      raw.actualdatetime ??
-      raw.actualDateTime ??
-      raw.expected ??
-      null,
-
-    statusCode:
-      raw.status?.code ??
-      raw.statusCode ??
-      "",
-
-    statusText:
-      raw.status?.description ??
-      raw.statusText ??
-      "",
+    statusCode: raw.status?.code ?? "",
+    statusText: raw.status?.description ?? "",
 
     aircraft:
       raw.aircraft?.description ??
@@ -176,11 +156,7 @@ function mapFlight(raw, dir) {
       "",
 
     gate: raw.gate ?? null,
-
-    belt:
-      raw.belt?.belt ??
-      raw.belt ??
-      null,
+    belt: raw.belt?.belt ?? null,
 
     codeshares: Array.isArray(raw.codeshares)
       ? raw.codeshares
@@ -201,32 +177,42 @@ function inTimeWindow(f, direction) {
   const futureLimit =
     FUTURE_WINDOW_H * 60 * 60_000;
 
-  const schedDate = parseDate(f.scheduled);
-  const expectedDate = parseDate(f.expected);
+  const scheduled = parseDate(f.scheduled);
+  const expected = parseDate(f.expected);
 
-  const sched = schedDate?.getTime() ?? NaN;
-  const expected = expectedDate?.getTime() ?? NaN;
+  const schedTime = scheduled?.getTime() ?? NaN;
+  const expectedTime = expected?.getTime() ?? NaN;
 
-  const ref = !Number.isNaN(expected)
-    ? expected
-    : sched;
+  const referenceTime =
+    !Number.isNaN(expectedTime)
+      ? expectedTime
+      : schedTime;
 
   if (isCancelled(f.statusCode)) {
-    if (Number.isNaN(sched)) return true;
+    if (Number.isNaN(schedTime)) return true;
 
-    return sched >= now - 30 * 60_000;
+    return schedTime >= now - 30 * 60_000;
   }
 
   if (isCompleted(f.statusCode)) {
-    if (Number.isNaN(ref)) return false;
+    if (Number.isNaN(referenceTime)) {
+      return false;
+    }
 
-    return ref >= now - pastLimit;
+    return referenceTime >= now - pastLimit;
   }
 
-  if (Number.isNaN(ref)) return true;
+  if (Number.isNaN(referenceTime)) {
+    return true;
+  }
 
-  if (ref > now + futureLimit) return false;
-  if (ref < now - 6 * 60 * 60_000) return false;
+  if (referenceTime > now + futureLimit) {
+    return false;
+  }
+
+  if (referenceTime < now - 6 * 60 * 60_000) {
+    return false;
+  }
 
   return true;
 }
@@ -257,13 +243,13 @@ function filterSort(flights, q, direction) {
   return rows
     .slice()
     .sort((a, b) => {
-      const aDate =
+      const aTime =
         parseDate(a.scheduled)?.getTime() ?? 0;
 
-      const bDate =
+      const bTime =
         parseDate(b.scheduled)?.getTime() ?? 0;
 
-      return aDate - bDate;
+      return aTime - bTime;
     })
     .slice(0, 150);
 }
@@ -291,9 +277,8 @@ function rowHtml(f, isArr) {
         )}">+${f.codeshares.length}</span>`
       : "";
 
-  const gateOrBelt = isArr
-    ? f.belt
-    : f.gate;
+  const gateOrBelt =
+    isArr ? f.belt : f.gate;
 
   const fr = fr24Url(f.fn);
 
@@ -345,15 +330,18 @@ function renderFlights() {
     return;
   }
 
-  const isArr = tab === "arrivals";
+  const isArr =
+    tab === "arrivals";
 
-  const all = isArr
-    ? state.arrivals
-    : state.departures;
+  const all =
+    isArr
+      ? state.arrivals
+      : state.departures;
 
-  const err = isArr
-    ? state.errorArr
-    : state.errorDep;
+  const err =
+    isArr
+      ? state.errorArr
+      : state.errorDep;
 
   const notice =
     document.getElementById(
@@ -420,22 +408,25 @@ function renderFlights() {
     tbody.innerHTML =
       `<tr><td colspan="8" class="empty">No movements in the current time window.</td></tr>`;
   } else {
-    tbody.innerHTML = rows
-      .map((f) =>
-        rowHtml(f, isArr)
-      )
-      .join("");
+    tbody.innerHTML =
+      rows
+        .map((f) =>
+          rowHtml(f, isArr)
+        )
+        .join("");
   }
 
-  const send = state.sendDate
-    ? ` · as of ${hhmm(
-        state.sendDate
-      )}`
-    : "";
+  const send =
+    state.sendDate
+      ? ` · as of ${hhmm(
+          state.sendDate
+        )}`
+      : "";
 
-  const upd = state.refreshing
-    ? " · updating…"
-    : "";
+  const upd =
+    state.refreshing
+      ? " · updating…"
+      : "";
 
   meta.textContent =
     `${rows.length} shown · official VIE monitor${send}${upd}`;
@@ -457,15 +448,19 @@ function windComponent(
     (angle * Math.PI) /
     180;
 
-  const head = Math.round(
-    wspd * Math.cos(rad)
-  );
+  const head =
+    Math.round(
+      wspd *
+        Math.cos(rad)
+    );
 
-  const cross = Math.round(
-    Math.abs(
-      wspd * Math.sin(rad)
-    )
-  );
+  const cross =
+    Math.round(
+      Math.abs(
+        wspd *
+          Math.sin(rad)
+      )
+    );
 
   return {
     head,
@@ -474,7 +469,8 @@ function windComponent(
 }
 
 function renderWeather() {
-  const wx = state.weather;
+  const wx =
+    state.weather;
 
   const metarEl =
     document.getElementById(
@@ -524,7 +520,9 @@ function renderWeather() {
   let obs = "—";
 
   const reportDate =
-    parseDate(m.reportTime);
+    parseDate(
+      m.reportTime
+    );
 
   if (reportDate) {
     try {
@@ -538,8 +536,9 @@ function renderWeather() {
             minute: "2-digit",
             timeZone: "UTC",
           }
-        ).format(reportDate) +
-        " UTC";
+        ).format(
+          reportDate
+        ) + " UTC";
     } catch {
       obs = "—";
     }
@@ -610,7 +609,8 @@ function renderWeather() {
       <div>
         <dt>Category</dt>
         <dd class="num ${catClass}">${escapeHtml(
-          m.fltCat || "—"
+          m.fltCat ||
+            "—"
         )}</dd>
       </div>
     </dl>
@@ -636,37 +636,39 @@ function renderWeather() {
         "number"
     ) {
       wcGrid.innerHTML =
-        RUNWAYS.map((r) => {
-          const {
-            head,
-            cross,
-          } = windComponent(
-            r.heading,
-            m.wdir,
-            m.wspd
-          );
+        RUNWAYS
+          .map((r) => {
+            const {
+              head,
+              cross,
+            } = windComponent(
+              r.heading,
+              m.wdir,
+              m.wspd
+            );
 
-          const headLabel =
-            head >= 0
-              ? `Headwind ${head}`
-              : `Tailwind ${-head}`;
+            const headLabel =
+              head >= 0
+                ? `Headwind ${head}`
+                : `Tailwind ${-head}`;
 
-          return `
-            <div class="wc">
-              <div class="num strong">
-                RWY ${r.id}
+            return `
+              <div class="wc">
+                <div class="num strong">
+                  RWY ${r.id}
+                </div>
+
+                <div class="num muted">
+                  ${headLabel} kt
+                </div>
+
+                <div class="num muted">
+                  Crosswind ${cross} kt
+                </div>
               </div>
-
-              <div class="num muted">
-                ${headLabel} kt
-              </div>
-
-              <div class="num muted">
-                Crosswind ${cross} kt
-              </div>
-            </div>
-          `;
-        }).join("");
+            `;
+          })
+          .join("");
     } else {
       wcGrid.innerHTML =
         `<p class="empty" style="grid-column:1/-1">Variable / calm — no components</p>`;
@@ -721,12 +723,13 @@ async function loadFlights(direction) {
       ? "/api/flights/departures"
       : "/api/flights/arrivals";
 
-  const res = await fetch(
-    API + path,
-    {
-      cache: "no-store",
-    }
-  );
+  const res =
+    await fetch(
+      API + path,
+      {
+        cache: "no-store",
+      }
+    );
 
   if (!res.ok) {
     throw new Error(
@@ -740,43 +743,38 @@ async function loadFlights(direction) {
   let json;
 
   try {
-    json = JSON.parse(text);
+    json =
+      JSON.parse(text);
   } catch {
     throw new Error(
       "Flight API returned invalid JSON"
     );
   }
 
-  let rows = [];
-
-  if (Array.isArray(json)) {
-    rows = json;
-  } else if (
-    Array.isArray(json.flights)
+  if (
+    !json ||
+    !json.monitor
   ) {
-    rows = json.flights;
-  } else if (
-    direction === "arrivals" &&
-    Array.isArray(
-      json.monitor?.arrival
-    )
-  ) {
-    rows = json.monitor.arrival;
-  } else if (
-    direction === "departures" &&
-    Array.isArray(
-      json.monitor?.departure
-    )
-  ) {
-    rows = json.monitor.departure;
-  } else {
     throw new Error(
-      "Unexpected flight data format"
+      "Flight API returned no monitor data"
     );
   }
 
-  const mapped = rows
-    .map((r) =>
+  const rows =
+    Array.isArray(
+      json.monitor.departure
+    )
+      ? json.monitor.departure
+      : [];
+
+  if (rows.length === 0) {
+    throw new Error(
+      "Flight API returned no flights"
+    );
+  }
+
+  const mapped =
+    rows.map((r) =>
       mapFlight(
         r,
         direction
@@ -786,21 +784,22 @@ async function loadFlights(direction) {
   return {
     flights: mapped,
     sendDate:
-      json.monitor?.sendDate ??
+      json.monitor.sendDate ??
       null,
     stale: Boolean(
-      json.monitor?.stale
+      json.monitor.stale
     ),
   };
 }
 
 async function loadWeather() {
-  const res = await fetch(
-    API + "/api/weather",
-    {
-      cache: "no-store",
-    }
-  );
+  const res =
+    await fetch(
+      API + "/api/weather",
+      {
+        cache: "no-store",
+      }
+    );
 
   if (!res.ok) {
     throw new Error(
@@ -812,7 +811,9 @@ async function loadWeather() {
 }
 
 async function refresh() {
-  if (state.refreshing) return;
+  if (state.refreshing) {
+    return;
+  }
 
   state.refreshing = true;
 
@@ -861,12 +862,6 @@ async function refresh() {
     if (arr.error) {
       state.errorArr =
         arr.error;
-
-      if (
-        state.arrivals.length === 0
-      ) {
-        state.arrivals = [];
-      }
     } else {
       state.errorArr = null;
       state.arrivals =
@@ -878,12 +873,6 @@ async function refresh() {
     if (dep.error) {
       state.errorDep =
         dep.error;
-
-      if (
-        state.departures.length === 0
-      ) {
-        state.departures = [];
-      }
     } else {
       state.errorDep = null;
       state.departures =
@@ -1025,9 +1014,7 @@ const search =
 if (search) {
   search.addEventListener(
     "input",
-    () => {
-      renderFlights();
-    }
+    renderFlights
   );
 }
 
