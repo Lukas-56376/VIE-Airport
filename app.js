@@ -1061,6 +1061,63 @@ function setTab(tab) {
   renderFlights();
 }
 
+/* Theme toggle */
+const THEME_KEY = "vie-airport-theme";
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "light") {
+    root.setAttribute("data-theme", "light");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute(
+      "content",
+      theme === "light" ? "#f4f6f9" : "#0b0d12"
+    );
+  }
+}
+
+function initTheme() {
+  let theme = "dark";
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark") {
+      theme = stored;
+    } else if (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: light)").matches
+    ) {
+      theme = "light";
+    }
+  } catch {
+    /* ignore */
+  }
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  const isLight =
+    document.documentElement.getAttribute("data-theme") === "light";
+  const next = isLight ? "dark" : "light";
+  applyTheme(next);
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch {
+    /* ignore */
+  }
+}
+
+initTheme();
+
+const themeToggle = document.getElementById("theme-toggle");
+if (themeToggle) {
+  themeToggle.addEventListener("click", toggleTheme);
+}
+
 document
   .querySelectorAll(".tab")
   .forEach((btn) => {
@@ -1096,11 +1153,11 @@ if (filterStatus) {
   );
 }
 
-const sortBy =
+const sortBySelect =
   document.getElementById("sort-by");
 
-if (sortBy) {
-  sortBy.addEventListener(
+if (sortBySelect) {
+  sortBySelect.addEventListener(
     "change",
     renderFlights
   );
