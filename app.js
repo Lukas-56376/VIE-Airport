@@ -436,10 +436,10 @@ function renderFlights() {
     notice.innerHTML =
       `<div class="notice bad"><strong>No live data.</strong> ${escapeHtml(
         err
-      )}</div>`;
+      )}. Check your connection and try again in a moment.</div>`;
 
     tbody.innerHTML =
-      `<tr><td colspan="8" class="empty">—</td></tr>`;
+      `<tr><td colspan="8" class="empty">Could not load ${tab}. The feed may be temporarily unavailable.</td></tr>`;
 
     meta.textContent =
       "Error loading feed";
@@ -464,17 +464,28 @@ function renderFlights() {
     all.length === 0
   ) {
     tbody.innerHTML =
-      `<tr><td colspan="8" class="empty">Loading live ${tab}…</td></tr>`;
+      `<tr><td colspan="8" class="empty">
+        <span class="loading-dot"></span>
+        Loading live ${tab}…
+      </td></tr>`;
 
     meta.textContent =
-      "Loading…";
+      "Connecting to official VIE monitor…";
 
     return;
   }
 
+  const hasSearch = (q || "").trim().length > 0;
+  const hasFilter = statusFilter && statusFilter !== "all";
+
   if (rows.length === 0) {
+    let emptyMsg = "No movements in the current time window.";
+    if (hasSearch || hasFilter) {
+      emptyMsg =
+        "No flights match your search or filter. Try clearing the search or choosing “All status”.";
+    }
     tbody.innerHTML =
-      `<tr><td colspan="8" class="empty">No movements in the current time window.</td></tr>`;
+      `<tr><td colspan="8" class="empty">${emptyMsg}</td></tr>`;
   } else {
     tbody.innerHTML =
       rows
@@ -496,8 +507,18 @@ function renderFlights() {
       ? " · updating…"
       : "";
 
+  const filterHint =
+    hasFilter
+      ? ` · filter: ${statusFilter}`
+      : "";
+
+  const searchHint =
+    hasSearch
+      ? ` · search active`
+      : "";
+
   meta.textContent =
-    `${rows.length} shown · official VIE monitor${send}${upd}`;
+    `${rows.length} shown · official VIE monitor${filterHint}${searchHint}${send}${upd}`;
 }
 
 function windComponent(
@@ -1061,7 +1082,7 @@ function setTab(tab) {
   renderFlights();
 }
 
-/* Theme toggle */
+
 const THEME_KEY = "vie-airport-theme";
 
 function applyTheme(theme) {
@@ -1094,7 +1115,7 @@ function initTheme() {
       theme = "light";
     }
   } catch {
-    /* ignore */
+
   }
   applyTheme(theme);
 }
@@ -1107,7 +1128,7 @@ function toggleTheme() {
   try {
     localStorage.setItem(THEME_KEY, next);
   } catch {
-    /* ignore */
+
   }
 }
 

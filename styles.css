@@ -523,7 +523,6 @@ td.muted,
   white-space: nowrap;
 }
 
-/* Status pills */
 .status {
   display: inline-flex;
   align-items: center;
@@ -797,6 +796,22 @@ td.muted,
   text-align: center;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+.loading-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 .footer {
