@@ -1,5 +1,4 @@
 :root {
-  /* Dark theme (default) – deep night aviation */
   --bg: #0b0d12;
   --bg-elevated: #12151c;
   --surface: #171b24;
@@ -49,7 +48,6 @@
   --header-h: 72px;
 }
 
-/* Light theme */
 [data-theme="light"] {
   --bg: #f4f6f9;
   --bg-elevated: #ffffff;
@@ -139,7 +137,6 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
-/* ========== HEADER ========== */
 .header {
   position: sticky;
   top: 0;
@@ -194,12 +191,10 @@ input {
   line-height: 0;
 }
 
-/* Dark mode → show sun (switch to light) */
 :root:not([data-theme="light"]) .theme-icon-sun {
   display: block;
 }
 
-/* Light mode → show moon (switch to dark) */
 [data-theme="light"] .theme-icon-moon {
   display: block;
 }
@@ -282,14 +277,12 @@ input {
   font-size: 16px;
 }
 
-/* ========== SHELL ========== */
 .shell {
   max-width: 1440px;
   margin: 0 auto;
   padding: 20px 16px 48px;
 }
 
-/* ========== TABS ========== */
 .tabs {
   display: flex;
   gap: 6px;
@@ -336,7 +329,6 @@ input {
   background: #2563eb;
 }
 
-/* ========== TOOLBAR ========== */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -412,7 +404,6 @@ input {
   margin-left: auto;
 }
 
-/* ========== PANELS ========== */
 .panel {
   display: none;
   animation: fadeIn 0.25s ease;
@@ -427,7 +418,6 @@ input {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ========== TABLES ========== */
 .table-wrap {
   overflow-x: auto;
   background: var(--surface);
@@ -578,7 +568,6 @@ td.muted,
   font-size: 11px;
 }
 
-/* ========== AIRPORT / ATC GRID ========== */
 .airport-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -733,6 +722,60 @@ td.muted,
   line-height: 1.55;
 }
 
+.liveatc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.liveatc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 2px 10px var(--accent-glow);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.liveatc-btn:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.liveatc-btn.secondary {
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.liveatc-btn.secondary:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.disclaimer {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--warn-bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.disclaimer strong {
+  color: var(--warn);
+}
+
 .notice {
   margin-bottom: 16px;
   padding: 12px 16px;
@@ -756,7 +799,6 @@ td.muted,
   font-size: 14px;
 }
 
-/* ========== FOOTER ========== */
 .footer {
   margin-top: 36px;
   padding: 20px 0 calc(20px + var(--safe-bottom));
@@ -771,7 +813,6 @@ td.muted,
   font-weight: 600;
 }
 
-/* ========== RESPONSIVE ========== */
 @media (min-width: 640px) {
   .header-inner {
     padding: 18px 28px;
